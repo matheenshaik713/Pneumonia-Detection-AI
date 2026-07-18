@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual Environment
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# Environment Variables
+.env
+
+# Python Cache
+.pytest_cache/
+
+# Logs
+logs/
+*.log
+
+# MLflow
+mlruns/
+
+# Model Checkpoints
+*.h5
+*.keras
+
+# Uploaded Images
+uploads/*
+
+# TensorBoard
+logs/tensorboard/
+
+# OS Files
+.DS_Store
+Thumbs.db
