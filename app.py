@@ -4,28 +4,29 @@ Streamlit Frontend
 Author: Matheen Shaik
 """
 
-import tempfile
-
+import requests
 import streamlit as st
 from PIL import Image
 
-from src.predict import Predictor
+# -----------------------------
+# FastAPI Endpoint
+# -----------------------------
 
+API_URL = "https://pneumonia-detection-ai-97kl.onrender.com/predict"
 
-# ---------------------------------------------------------
+# -----------------------------
 # Page Configuration
-# ---------------------------------------------------------
+# -----------------------------
 
 st.set_page_config(
     page_title="Pneumonia Detection AI",
     page_icon="🫁",
-    layout="centered",
-    initial_sidebar_state="expanded"
+    layout="centered"
 )
 
-# ---------------------------------------------------------
+# -----------------------------
 # Sidebar
-# ---------------------------------------------------------
+# -----------------------------
 
 st.sidebar.title("🫁 Pneumonia Detection AI")
 
@@ -34,51 +35,43 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("""
 ### About
 
+This application uses a Deep Learning CNN model deployed using FastAPI.
 
+### Detects
 
 - ✅ NORMAL
 - 🦠 PNEUMONIA
 
 ### Features
 
-- Image Upload
+- Chest X-ray Upload
 - AI Prediction
 - Confidence Score
-- Fast Inference
+- Fast API Inference
 
 ### Developer
 
 **Matheen Shaik**
 """)
 
-# ---------------------------------------------------------
-# Main Title
-# ---------------------------------------------------------
+# -----------------------------
+# Main Page
+# -----------------------------
 
 st.title("🫁 Pneumonia Detection AI")
 
-st.markdown("""
-### AI-powered Chest X-ray Classification
+st.write(
+    "Upload a Chest X-ray image to detect whether the patient has **Pneumonia** or is **Normal**."
+)
 
-Upload a Chest X-ray image and the trained CNN model will predict whether the patient has **Pneumonia** or is **Normal**.
-""")
-
-st.markdown("---")
-
-# ---------------------------------------------------------
-# File Upload
-# ---------------------------------------------------------
+st.divider()
 
 uploaded_file = st.file_uploader(
-    "📤 Upload Chest X-ray",
+    "Upload Chest X-ray",
     type=["jpg", "jpeg", "png"]
 )
 
-# ---------------------------------------------------------
-# Prediction
-# ---------------------------------------------------------
-
-if uploaded_file is not None:
+if uploaded_file:
 
     image = Image.open(uploaded_file)
 
@@ -88,59 +81,58 @@ if uploaded_file is not None:
         use_container_width=True
     )
 
-    st.markdown("")
-
     if st.button("🔍 Predict", use_container_width=True):
 
-        with st.spinner("Analyzing Chest X-ray..."):
+        with st.spinner("Analyzing X-ray..."):
 
-            with tempfile.NamedTemporaryFile(
-                delete=False,
-                suffix=".jpg"
-            ) as tmp:
+            files = {
+                "file": (
+                    uploaded_file.name,
+                    uploaded_file.getvalue(),
+                    uploaded_file.type
+                )
+            }
 
-                tmp.write(uploaded_file.getbuffer())
+            try:
 
-                image_path = tmp.name
+                response = requests.post(API_URL, files=files)
 
-            predictor = Predictor()
+                if response.status_code == 200:
 
-            prediction, confidence = predictor.predict(image_path)
+                    result = response.json()
 
-        st.markdown("---")
+                    prediction = result["prediction"]
+                    confidence = float(result["confidence"])
 
-        st.subheader("Prediction Result")
+                    st.divider()
 
-        if prediction == "PNEUMONIA":
+                    st.subheader("Prediction Result")
 
-            st.error(f"🦠 **Prediction:** {prediction}")
+                    if prediction.upper() == "PNEUMONIA":
 
-        else:
+                        st.error(f"🦠 **Prediction:** {prediction}")
 
-            st.success(f"✅ **Prediction:** {prediction}")
+                    else:
 
-        st.metric(
-            label="Confidence",
-            value=f"{confidence:.2f}%"
-        )
+                        st.success(f"✅ **Prediction:** {prediction}")
 
-        st.progress(confidence / 100)
+                    st.metric(
+                        "Confidence",
+                        f"{confidence:.2f}%"
+                    )
 
-# ---------------------------------------------------------
-# Model Information
-# ---------------------------------------------------------
+                    st.progress(confidence / 100)
 
-st.markdown("---")
+                else:
 
+                    st.error("Prediction failed.")
 
+            except Exception as e:
 
-# ---------------------------------------------------------
-# Footer
-# ---------------------------------------------------------
+                st.error(f"Unable to connect to API.\n\n{e}")
 
-st.markdown("---")
+st.divider()
 
 st.caption(
-    "Developed by Matheen Shaik | "
-    "Deep Learning • TensorFlow • Streamlit • FastAPI"
+    "Developed by Matheen Shaik | TensorFlow • FastAPI • Streamlit"
 )
